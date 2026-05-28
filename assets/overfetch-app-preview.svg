@@ -1,0 +1,43 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="720" fill="#0B1020"/>
+  <rect x="40" y="40" width="1200" height="640" rx="16" fill="#121A30" stroke="#24304A"/>
+  <rect x="40" y="40" width="1200" height="56" rx="16" fill="#1B2742"/>
+  <text x="72" y="75" fill="#E6EDF9" font-family="Arial, sans-serif" font-size="22" font-weight="700">Overfetch</text>
+  <text x="1110" y="75" fill="#93A4C5" font-family="Arial, sans-serif" font-size="14">DevTools Panel</text>
+
+  <rect x="72" y="122" width="270" height="120" rx="12" fill="#18233D" stroke="#2A3B61"/>
+  <text x="92" y="155" fill="#9DB2D8" font-family="Arial, sans-serif" font-size="14">Returned Payload</text>
+  <text x="92" y="198" fill="#D9E7FF" font-family="Arial, sans-serif" font-size="34" font-weight="700">120 KB</text>
+
+  <rect x="362" y="122" width="270" height="120" rx="12" fill="#18233D" stroke="#2A3B61"/>
+  <text x="382" y="155" fill="#9DB2D8" font-family="Arial, sans-serif" font-size="14">Used by UI</text>
+  <text x="382" y="198" fill="#69E2B3" font-family="Arial, sans-serif" font-size="34" font-weight="700">8 KB</text>
+
+  <rect x="652" y="122" width="270" height="120" rx="12" fill="#18233D" stroke="#2A3B61"/>
+  <text x="672" y="155" fill="#9DB2D8" font-family="Arial, sans-serif" font-size="14">Endpoint Waste</text>
+  <text x="672" y="198" fill="#FF8D8D" font-family="Arial, sans-serif" font-size="34" font-weight="700">93%</text>
+
+  <rect x="942" y="122" width="270" height="120" rx="12" fill="#18233D" stroke="#2A3B61"/>
+  <text x="962" y="155" fill="#9DB2D8" font-family="Arial, sans-serif" font-size="14">Duplicate Calls</text>
+  <text x="962" y="198" fill="#79B4FF" font-family="Arial, sans-serif" font-size="34" font-weight="700">4</text>
+
+  <rect x="72" y="270" width="740" height="370" rx="12" fill="#17213A" stroke="#2A3B61"/>
+  <text x="96" y="302" fill="#D9E7FF" font-family="Arial, sans-serif" font-size="16" font-weight="700">Payload Waste Trend</text>
+  <polyline points="110,580 220,510 330,520 440,430 550,440 660,370 770,350" stroke="#66C7FF" stroke-width="4" fill="none"/>
+  <polyline points="110,600 220,570 330,560 440,535 550,500 660,490 770,450" stroke="#69E2B3" stroke-width="4" fill="none"/>
+  <line x1="110" y1="600" x2="770" y2="600" stroke="#3A4F79"/>
+  <line x1="110" y1="330" x2="110" y2="600" stroke="#3A4F79"/>
+
+  <rect x="832" y="270" width="380" height="370" rx="12" fill="#17213A" stroke="#2A3B61"/>
+  <text x="856" y="302" fill="#D9E7FF" font-family="Arial, sans-serif" font-size="16" font-weight="700">Unused Fields</text>
+  <rect x="856" y="324" width="332" height="48" rx="8" fill="#1E2B49"/>
+  <text x="874" y="354" fill="#BFD1F2" font-family="Arial, sans-serif" font-size="14">billing_metadata</text>
+  <rect x="856" y="384" width="332" height="48" rx="8" fill="#1E2B49"/>
+  <text x="874" y="414" fill="#BFD1F2" font-family="Arial, sans-serif" font-size="14">recommendation_cache</text>
+  <rect x="856" y="444" width="332" height="48" rx="8" fill="#1E2B49"/>
+  <text x="874" y="474" fill="#BFD1F2" font-family="Arial, sans-serif" font-size="14">avatar_history</text>
+  <rect x="856" y="504" width="332" height="48" rx="8" fill="#1E2B49"/>
+  <text x="874" y="534" fill="#BFD1F2" font-family="Arial, sans-serif" font-size="14">archived_sessions</text>
+
+  <text x="72" y="668" fill="#8EA6D0" font-family="Arial, sans-serif" font-size="13">Illustrative preview of the Overfetch analytics panel</text>
+</svg>

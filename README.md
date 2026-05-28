@@ -2,6 +2,14 @@
 
 Chrome DevTools extension that analyzes runtime API payload usage in frontend applications. It intercepts API responses, tracks which response fields are accessed by the UI, and highlights unused fields, payload waste, duplicate requests, and optimization opportunities.
 
+## Website
+
+[overfetch.site](https://overfetch.site)
+
+## App Preview
+
+![Overfetch App Preview](./assets/overfetch-app-preview.svg)
+
 ## Stack
 
 - [WXT](https://wxt.dev)
@@ -22,6 +30,21 @@ Load the extension from `.output/chrome-mv3` (path shown in the WXT dev output),
 1. Open any page with API traffic
 2. Open Chrome DevTools → **Overfetch** panel
 3. Interact with the page to trigger `fetch` / XHR / `.json()` calls
+
+## Run Locally (Quick Start)
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Start the extension in development mode:
+   ```bash
+   npm run dev
+   ```
+3. In Chrome, open `chrome://extensions`.
+4. Enable **Developer mode**.
+5. Click **Load unpacked** and select `.output/chrome-mv3`.
+6. Open a website, open DevTools, and switch to the **Overfetch** panel.
 
 ## Architecture
 
