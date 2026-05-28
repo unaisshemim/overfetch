@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Overfetch Chrome Web Store Assets</title>
+    <style>
+      :root {
+        --ink: #121827;
+        --muted: #667085;
+        --line: #dce3ee;
+        --purple: #7b3ff2;
+        --purple-2: #5e37d9;
+        --red: #ff4056;
+        --orange: #ff7a1a;
+        --green: #15c46b;
+        --blue: #2162e8;
+        --mint: #dffcf0;
+        --wash: #f7f8fb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #e8edf5;
+        color: var(--ink);
+        font-family:
+          ui-sans-serif,
+          -apple-system,
+          BlinkMacSystemFont,
+          "SF Pro Display",
+          "Segoe UI",
+          sans-serif;
+      }
+
+      .stack {
+        display: grid;
+        gap: 40px;
+        padding: 40px;
+      }
+
+      .artboard {
+        position: relative;
+        overflow: hidden;
+        background: #fbfcff;
+        isolation: isolate;
+      }
+
+      .screenshot {
+        width: 1280px;
+        height: 800px;
+      }
+
+      .small-promo {
+        width: 440px;
+        height: 280px;
+      }
+
+      .marquee {
+        width: 1400px;
+        height: 560px;
+      }
+
+      .ambient {
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        background:
+          radial-gradient(circle at 8% 8%, rgba(123, 63, 242, 0.16), transparent 31%),
+          radial-gradient(circle at 92% 12%, rgba(21, 196, 107, 0.13), transparent 27%),
+          radial-gradient(circle at 82% 88%, rgba(255, 64, 86, 0.1), transparent 26%),
+          linear-gradient(135deg, #ffffff 0%, #f5f7fc 52%, #f8fbff 100%);
+      }
+
+      .mesh {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        opacity: 0.43;
+        background-image:
+          linear-gradient(rgba(18, 24, 39, 0.055) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(18, 24, 39, 0.055) 1px, transparent 1px);
+        background-size: 40px 40px;
+        mask-image: linear-gradient(to bottom, #000, transparent 78%);
+      }
+
+      .logo-mark {
+        width: 44px;
+        height: auto;
+        display: block;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-weight: 850;
+        letter-spacing: 0;
+      }
+
+      .brand span {
+        display: block;
+      }
+
+      .brand .name {
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .brand .tag {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 15px;
+        font-weight: 650;
+      }
+
+      .topbar {
+        position: absolute;
+        left: 64px;
+        right: 64px;
+        top: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .nav {
+        display: flex;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 17px;
+        font-weight: 700;
+      }
+
+      .pill,
+      .tab {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 9px 24px rgba(18, 24, 39, 0.06);
+      }
+
+      .tab {
+        padding: 12px 17px;
+      }
+
+      .tab.active {
+        border-color: rgba(123, 63, 242, 0.25);
+        background: #f0e8ff;
+        color: var(--purple);
+      }
+
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border-radius: 16px;
+        background: var(--ink);
+        color: white;
+        padding: 16px 22px;
+        font-size: 17px;
+        font-weight: 850;
+        box-shadow: 0 18px 38px rgba(18, 24, 39, 0.18);
+      }
+
+      .hero-copy {
+        position: absolute;
+        left: 72px;
+        top: 156px;
+        width: 480px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--purple);
+        font-size: 17px;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      .hero-copy h1,
+      .marquee-copy h1 {
+        margin-top: 16px;
+        color: var(--ink);
+        font-size: 62px;
+        line-height: 0.95;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .hero-copy p,
+      .marquee-copy p {
+        margin-top: 22px;
+        color: #374151;
+        font-size: 24px;
+        line-height: 1.32;
+        font-weight: 600;
+      }
+
+      .metric-row {
+        display: flex;
+        gap: 16px;
+        margin-top: 34px;
+      }
+
+      .mini-metric {
+        width: 142px;
+        border: 1px solid rgba(220, 227, 238, 0.9);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.83);
+        padding: 17px 16px;
+        box-shadow: 0 18px 34px rgba(18, 24, 39, 0.08);
+      }
+
+      .mini-metric strong {
+        display: block;
+        font-size: 29px;
+        line-height: 1;
+        font-weight: 900;
+      }
+
+      .mini-metric span {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .browser-window {
+        position: absolute;
+        overflow: hidden;
+        border: 1px solid rgba(202, 211, 225, 0.95);
+        border-radius: 30px;
+        background: white;
+        box-shadow:
+          0 40px 90px rgba(49, 57, 75, 0.18),
+          0 2px 0 rgba(255, 255, 255, 0.7) inset;
+      }
+
+      .browser-window.main {
+        right: 72px;
+        top: 130px;
+        width: 610px;
+        height: 526px;
+      }
+
+      .chrome {
+        height: 58px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 0 20px;
+        border-bottom: 1px solid #e8edf4;
+        background: #fbfcff;
+      }
+
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #d5dce8;
+      }
+
+      .dot.red {
+        background: #ff6173;
+      }
+
+      .dot.yellow {
+        background: #ffbf3c;
+      }
+
+      .dot.green {
+        background: #20d37b;
+      }
+
+      .url {
+        margin-left: 14px;
+        flex: 1;
+        border-radius: 999px;
+        background: #eff3f8;
+        color: #6b7280;
+        padding: 9px 14px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .app-shell {
+        display: grid;
+        grid-template-columns: 154px 1fr;
+        height: calc(100% - 58px);
+      }
+
+      .side {
+        padding: 22px 18px;
+        border-right: 1px solid #e8edf4;
+        background: #fbfcff;
+      }
+
+      .side-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 26px;
+        font-size: 16px;
+        font-weight: 900;
+      }
+
+      .side-logo img {
+        width: 24px;
+      }
+
+      .side-line {
+        height: 12px;
+        margin: 15px 0;
+        border-radius: 999px;
+        background: #e7ecf4;
+      }
+
+      .side-line.active {
+        width: 92px;
+        background: #e9ddff;
+      }
+
+      .screen {
+        padding: 24px;
+      }
+
+      .alert-card {
+        display: grid;
+        grid-template-columns: 1fr 150px;
+        gap: 22px;
+        border: 1px solid #ebddff;
+        border-radius: 24px;
+        background:
+          linear-gradient(100deg, rgba(123, 63, 242, 0.08), transparent 55%),
+          #fff;
+        padding: 25px;
+      }
+
+      .alert-card h2 {
+        font-size: 26px;
+        line-height: 1.08;
+        font-weight: 900;
+      }
+
+      .alert-card p {
+        margin-top: 10px;
+        color: #5d6678;
+        font-size: 15px;
+        line-height: 1.35;
+        font-weight: 650;
+      }
+
+      .ring {
+        width: 122px;
+        height: 122px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at center, white 57%, transparent 58%),
+          conic-gradient(var(--red) 0 84%, #ede7ff 84% 100%);
+      }
+
+      .ring strong {
+        display: block;
+        text-align: center;
+        font-size: 30px;
+        font-weight: 900;
+      }
+
+      .ring span {
+        display: block;
+        text-align: center;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .tile {
+        border: 1px solid #e8edf4;
+        border-radius: 18px;
+        padding: 17px;
+        background: white;
+      }
+
+      .tile small {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .tile strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 25px;
+        line-height: 1;
+        font-weight: 900;
+      }
+
+      .progress {
+        height: 13px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #ecf0f5;
+      }
+
+      .progress div {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--red), var(--orange));
+      }
+
+      .floating-chip {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid rgba(220, 227, 238, 0.95);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.92);
+        padding: 15px 17px;
+        box-shadow: 0 22px 48px rgba(18, 24, 39, 0.14);
+        font-size: 15px;
+        font-weight: 850;
+      }
+
+      .floating-chip .badge {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 12px;
+        color: white;
+        background: var(--red);
+      }
+
+      .chip-one {
+        right: 520px;
+        top: 598px;
+      }
+
+      .chip-two {
+        right: 44px;
+        top: 640px;
+      }
+
+      .split {
+        position: absolute;
+        inset: 126px 64px 58px;
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        gap: 30px;
+      }
+
+      .panel {
+        overflow: hidden;
+        border: 1px solid rgba(220, 227, 238, 0.96);
+        border-radius: 28px;
+        background: white;
+        box-shadow: 0 26px 62px rgba(18, 24, 39, 0.1);
+      }
+
+      .panel.pad {
+        padding: 30px;
+      }
+
+      .panel-title {
+        color: var(--muted);
+        font-size: 16px;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .panel h2 {
+        margin-top: 14px;
+        font-size: 42px;
+        line-height: 1.03;
+        font-weight: 900;
+      }
+
+      .panel p {
+        margin-top: 16px;
+        color: #4b5563;
+        font-size: 19px;
+        line-height: 1.38;
+        font-weight: 600;
+      }
+
+      .payload-card {
+        margin-top: 28px;
+        border-radius: 24px;
+        background: #f8fafc;
+        padding: 24px;
+      }
+
+      .payload-numbers {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .payload-numbers strong {
+        font-size: 44px;
+        line-height: 1;
+        font-weight: 900;
+      }
+
+      .payload-numbers span {
+        display: block;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 15px;
+        font-weight: 750;
+      }
+
+      .compare-bars {
+        display: grid;
+        gap: 15px;
+        margin-top: 24px;
+      }
+
+      .bar-row {
+        display: grid;
+        grid-template-columns: 104px 1fr 58px;
+        align-items: center;
+        gap: 13px;
+        color: #4b5563;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .bar-track {
+        height: 15px;
+        border-radius: 999px;
+        background: #e9eef6;
+        overflow: hidden;
+      }
+
+      .bar-track div {
+        height: 100%;
+        border-radius: inherit;
+      }
+
+      .field-tree {
+        height: 100%;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+
+      .tree-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 24px 26px;
+        border-bottom: 1px solid #e8edf4;
+      }
+
+      .search {
+        width: 250px;
+        border: 1px solid #e0e6ef;
+        border-radius: 14px;
+        color: #8a93a3;
+        padding: 12px 15px;
+        font-weight: 700;
+      }
+
+      .tree-body {
+        display: grid;
+        grid-template-columns: 1fr 270px;
+        min-height: 0;
+      }
+
+      .code-list {
+        padding: 20px 26px;
+        font-family: "SF Mono", ui-monospace, Menlo, monospace;
+        font-size: 17px;
+        line-height: 1.92;
+      }
+
+      .code-line {
+        display: flex;
+        justify-content: space-between;
+        border-radius: 9px;
+        padding: 0 12px;
+      }
+
+      .code-line.unused {
+        color: var(--red);
+        background: #fff3f4;
+      }
+
+      .code-line.used {
+        color: #0f9f5b;
+      }
+
+      .code-line span:last-child {
+        color: #818898;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .field-detail {
+        border-left: 1px solid #e8edf4;
+        padding: 24px;
+        background: #fbfcff;
+      }
+
+      .field-detail h3 {
+        margin: 0;
+        font-size: 23px;
+      }
+
+      .danger-box {
+        margin-top: 20px;
+        border: 1px solid #ffd0d6;
+        border-radius: 18px;
+        background: #fff7f8;
+        padding: 18px;
+      }
+
+      .danger-box strong {
+        display: block;
+        color: var(--red);
+        font-size: 31px;
+        line-height: 1;
+      }
+
+      .danger-box span {
+        display: block;
+        margin-top: 8px;
+        color: #6b7280;
+        font-weight: 700;
+      }
+
+      .request-list {
+        display: grid;
+        gap: 14px;
+        padding: 26px;
+      }
+
+      .request {
+        display: grid;
+        grid-template-columns: 80px 1fr 90px 100px;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid #e8edf4;
+        border-radius: 18px;
+        background: #fff;
+        padding: 17px 18px;
+      }
+
+      .method {
+        width: fit-content;
+        border-radius: 10px;
+        background: #eef7ff;
+        color: var(--blue);
+        padding: 8px 10px;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .path {
+        font-family: "SF Mono", ui-monospace, Menlo, monospace;
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      .waste {
+        color: var(--red);
+        font-weight: 900;
+      }
+
+      .dupe-layout {
+        position: absolute;
+        inset: 130px 70px 64px;
+        display: grid;
+        grid-template-columns: 450px 1fr;
+        gap: 30px;
+      }
+
+      .dupe-cards {
+        display: grid;
+        gap: 16px;
+        align-content: start;
+      }
+
+      .dupe-card {
+        position: relative;
+        border: 1px solid #e8edf4;
+        border-radius: 22px;
+        background: white;
+        padding: 20px;
+        box-shadow: 0 20px 48px rgba(18, 24, 39, 0.09);
+      }
+
+      .dupe-card::before {
+        content: "";
+        position: absolute;
+        top: 18px;
+        bottom: 18px;
+        left: -1px;
+        width: 6px;
+        border-radius: 999px;
+        background: var(--orange);
+      }
+
+      .dupe-card strong {
+        display: block;
+        font-size: 21px;
+      }
+
+      .dupe-card p {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.35;
+        font-weight: 650;
+      }
+
+      .timeline {
+        position: relative;
+        min-height: 420px;
+        padding: 45px;
+      }
+
+      .timeline::before {
+        content: "";
+        position: absolute;
+        left: 84px;
+        top: 70px;
+        bottom: 70px;
+        width: 4px;
+        border-radius: 999px;
+        background: #e6ebf3;
+      }
+
+      .event {
+        position: relative;
+        display: grid;
+        grid-template-columns: 68px 1fr 130px;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 30px;
+      }
+
+      .event-dot {
+        z-index: 1;
+        width: 48px;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #fff0db;
+        color: var(--orange);
+        font-size: 22px;
+        font-weight: 900;
+        box-shadow: 0 0 0 8px white;
+      }
+
+      .event-body {
+        border: 1px solid #e8edf4;
+        border-radius: 18px;
+        background: white;
+        padding: 18px;
+      }
+
+      .event-body strong {
+        display: block;
+        font-size: 18px;
+      }
+
+      .event-body span {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .event-save {
+        color: var(--green);
+        font-size: 24px;
+        font-weight: 900;
+      }
+
+      .popup-stage {
+        position: absolute;
+        inset: 126px 70px 68px;
+        display: grid;
+        grid-template-columns: 500px 1fr;
+        gap: 42px;
+        align-items: center;
+      }
+
+      .popup-window {
+        width: 420px;
+        height: 520px;
+        justify-self: center;
+        overflow: hidden;
+        border: 1px solid #d9e0eb;
+        border-radius: 34px;
+        background: white;
+        box-shadow: 0 40px 90px rgba(18, 24, 39, 0.2);
+      }
+
+      .popup-head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 25px 28px;
+        border-bottom: 1px solid #e8edf4;
+      }
+
+      .popup-head img {
+        width: 40px;
+      }
+
+      .popup-head strong {
+        display: block;
+        font-size: 22px;
+      }
+
+      .popup-head span {
+        display: block;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .popup-content {
+        padding: 24px;
+      }
+
+      .domain-card {
+        border: 1px solid #dfe6f1;
+        border-radius: 24px;
+        background: #fafbfe;
+        padding: 18px;
+      }
+
+      .domain-card span {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 850;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .domain-card strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .popup-alert {
+        margin-top: 22px;
+      }
+
+      .popup-alert strong {
+        color: var(--purple);
+        font-size: 18px;
+      }
+
+      .popup-alert h2 {
+        margin-top: 8px;
+        font-size: 25px;
+        line-height: 1.17;
+      }
+
+      .popup-stats {
+        margin-top: 24px;
+        border: 1px solid #dfe6f1;
+        border-radius: 26px;
+        padding: 22px;
+        box-shadow: 0 12px 30px rgba(18, 24, 39, 0.08);
+      }
+
+      .popup-stat-row {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .popup-stat-row strong {
+        font-size: 36px;
+        line-height: 1;
+      }
+
+      .promo-copy {
+        position: relative;
+      }
+
+      .promo-copy h1 {
+        font-size: 59px;
+        line-height: 0.97;
+        font-weight: 900;
+      }
+
+      .promo-copy p {
+        margin-top: 20px;
+        color: #4b5563;
+        font-size: 22px;
+        line-height: 1.34;
+        font-weight: 600;
+      }
+
+      .small-promo .ambient {
+        background:
+          radial-gradient(circle at 14% 5%, rgba(123, 63, 242, 0.22), transparent 34%),
+          radial-gradient(circle at 95% 80%, rgba(21, 196, 107, 0.18), transparent 30%),
+          #fbfcff;
+      }
+
+      .small-inner {
+        position: absolute;
+        inset: 26px;
+      }
+
+      .small-promo .logo-mark {
+        width: 38px;
+      }
+
+      .small-promo h1 {
+        margin-top: 14px;
+        width: 250px;
+        font-size: 38px;
+        line-height: 0.98;
+        font-weight: 900;
+      }
+
+      .small-promo p {
+        margin-top: 14px;
+        width: 230px;
+        color: #465365;
+        font-size: 15px;
+        line-height: 1.32;
+        font-weight: 700;
+      }
+
+      .small-device {
+        position: absolute;
+        right: 22px;
+        bottom: 20px;
+        width: 148px;
+        height: 178px;
+        border: 1px solid #dbe3ef;
+        border-radius: 24px;
+        background: white;
+        box-shadow: 0 22px 42px rgba(18, 24, 39, 0.16);
+        padding: 16px;
+      }
+
+      .small-device .ring {
+        width: 88px;
+        height: 88px;
+        margin: 0 auto 13px;
+      }
+
+      .small-device .ring strong {
+        font-size: 23px;
+      }
+
+      .small-device .progress {
+        height: 10px;
+      }
+
+      .marquee .ambient {
+        background:
+          radial-gradient(circle at 11% 10%, rgba(123, 63, 242, 0.18), transparent 28%),
+          radial-gradient(circle at 96% 24%, rgba(33, 98, 232, 0.13), transparent 25%),
+          radial-gradient(circle at 88% 92%, rgba(21, 196, 107, 0.13), transparent 28%),
+          linear-gradient(135deg, #ffffff 0%, #f7f9fd 58%, #f9fbff 100%);
+      }
+
+      .marquee-copy {
+        position: absolute;
+        left: 70px;
+        top: 76px;
+        width: 540px;
+      }
+
+      .marquee-copy h1 {
+        font-size: 60px;
+      }
+
+      .marquee-copy p {
+        font-size: 21px;
+      }
+
+      .marquee-product {
+        position: absolute;
+        right: 70px;
+        top: 55px;
+        width: 640px;
+        height: 430px;
+        transform: rotate(-1.5deg);
+      }
+
+      .marquee-product .alert-card {
+        grid-template-columns: 1fr 125px;
+      }
+
+      .marquee-product .screen {
+        padding: 20px;
+      }
+
+      .marquee-product .tiles {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .marquee-product .tile strong {
+        font-size: 21px;
+      }
+
+      .number-pop {
+        color: var(--red);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stack">
+      <section id="screenshot-1" class="artboard screenshot">
+        <div class="ambient"></div>
+        <div class="mesh"></div>
+        <header class="topbar">
+          <div class="brand">
+            <img class="logo-mark" src="../assets/logo.png" alt="" />
+            <span>
+              <span class="name">Overfetch</span>
+              <span class="tag">API payload analyzer</span>
+            </span>
+          </div>
+          <div class="nav">
+            <span class="tab active">Overview</span>
+            <span class="tab">Unused Fields</span>
+            <span class="tab">Duplicates</span>
+          </div>
+        </header>
+
+        <div class="hero-copy">
+          <div class="eyebrow">Runtime API insight</div>
+          <h1>See wasted API data before users feel it.</h1>
+          <p>Overfetch shows which response fields your UI actually uses, then ranks payload waste by endpoint.</p>
+          <div class="metric-row">
+            <div class="mini-metric"><strong class="number-pop">97%</strong><span>waste found</span></div>
+            <div class="mini-metric"><strong>12</strong><span>API calls</span></div>
+            <div class="mini-metric"><strong>9.1 KB</strong><span>removable</span></div>
+          </div>
+        </div>
+
+        <div class="browser-window main">
+          <div class="chrome">
+            <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+            <span class="url">formdb.io/dashboard</span>
+          </div>
+          <div class="app-shell">
+            <aside class="side">
+              <div class="side-logo"><img src="../assets/logo.png" alt="" />Overfetch</div>
+              <div class="side-line active"></div>
+              <div class="side-line" style="width:74px"></div>
+              <div class="side-line" style="width:98px"></div>
+              <div class="side-line" style="width:61px"></div>
+            </aside>
+            <section class="screen">
+              <div class="alert-card">
+                <div>
+                  <h2>You're overfetching</h2>
+                  <p>Your UI used 253 B of 9.3 KB returned. You can remove 9.1 KB from this session.</p>
+                </div>
+                <div class="ring"><div><strong>97%</strong><span>Waste</span></div></div>
+              </div>
+              <div class="tiles">
+                <div class="tile"><small>Payload</small><strong>9.3 KB</strong></div>
+                <div class="tile"><small>Used by UI</small><strong style="color:var(--green)">253 B</strong></div>
+                <div class="tile"><small>Efficiency</small><strong>3/100</strong></div>
+              </div>
+              <div style="margin-top:22px" class="progress"><div style="width:84%"></div></div>
+            </section>
+          </div>
+        </div>
+
+        <div class="floating-chip chip-one"><span class="badge">!</span> Top waste: validationRules</div>
+        <div class="floating-chip chip-two"><span class="badge" style="background:var(--green)">✓</span> 6 fields actually rendered</div>
+      </section>
+
+      <section id="screenshot-2" class="artboard screenshot">
+        <div class="ambient"></div>
+        <div class="mesh"></div>
+        <header class="topbar">
+          <div class="brand">
+            <img class="logo-mark" src="../assets/logo.png" alt="" />
+            <span><span class="name">Overfetch</span><span class="tag">Payload waste by endpoint</span></span>
+          </div>
+          <div class="cta">Open DevTools report</div>
+        </header>
+        <div class="split">
+          <div class="panel pad">
+            <div class="panel-title">Payload breakdown</div>
+            <h2>Your UI used less than 3% of this response.</h2>
+            <p>Compare data received with data rendered so the biggest API cleanup work is obvious.</p>
+            <div class="payload-card">
+              <div class="payload-numbers">
+                <div><strong>9.6 KB</strong><span>Data received</span></div>
+                <div style="text-align:right"><strong style="color:var(--green)">253 B</strong><span>Used by UI</span></div>
+              </div>
+              <div class="compare-bars">
+                <div class="bar-row"><span>Unused</span><span class="bar-track"><div style="width:95%; background:linear-gradient(90deg,var(--red),var(--orange))"></div></span><span>95%</span></div>
+                <div class="bar-row"><span>Used</span><span class="bar-track"><div style="width:5%; background:var(--green)"></div></span><span>5%</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="tree-head">
+              <div>
+                <div class="panel-title">Ranked endpoints</div>
+                <h2 style="font-size:32px;margin-top:8px">Start with the noisy calls</h2>
+              </div>
+              <div class="search">Search endpoints...</div>
+            </div>
+            <div class="request-list">
+              <div class="request"><span class="method">GET</span><span class="path">/api/forms</span><span>9.6 KB</span><span class="waste">95%</span></div>
+              <div class="request"><span class="method">GET</span><span class="path">/api/workspaces</span><span>4.2 KB</span><span class="waste">76%</span></div>
+              <div class="request"><span class="method">POST</span><span class="path">/api/validate</span><span>2.8 KB</span><span class="waste">61%</span></div>
+              <div class="request"><span class="method">GET</span><span class="path">/api/forms/:id</span><span>1.9 KB</span><span class="waste">42%</span></div>
+              <div class="request"><span class="method">GET</span><span class="path">/api/user</span><span>880 B</span><span style="color:var(--green);font-weight:900">12%</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="screenshot-3" class="artboard screenshot">
+        <div class="ambient"></div>
+        <div class="mesh"></div>
+        <header class="topbar">
+          <div class="brand">
+            <img class="logo-mark" src="../assets/logo.png" alt="" />
+            <span><span class="name">Overfetch</span><span class="tag">Unused field explorer</span></span>
+          </div>
+          <div class="nav">
+            <span class="tab">Payload</span>
+            <span class="tab active">Unused Fields</span>
+            <span class="tab">Used by UI</span>
+          </div>
+        </header>
+        <div class="split" style="grid-template-columns: 1fr 0.78fr;">
+          <div class="panel field-tree">
+            <div class="tree-head">
+              <div>
+                <div class="panel-title">Payload structure</div>
+                <h2 style="font-size:32px;margin-top:8px">Know exactly what to trim</h2>
+              </div>
+              <div class="search">Search fields...</div>
+            </div>
+            <div class="tree-body">
+              <div class="code-list">
+                <div class="code-line used"><span>forms[]</span><span>array</span></div>
+                <div class="code-line used"><span>&nbsp;&nbsp;id</span><span>used</span></div>
+                <div class="code-line unused"><span>&nbsp;&nbsp;workspaceId</span><span>unused</span></div>
+                <div class="code-line used"><span>&nbsp;&nbsp;name</span><span>used</span></div>
+                <div class="code-line unused"><span>&nbsp;&nbsp;description</span><span>unused</span></div>
+                <div class="code-line unused"><span>&nbsp;&nbsp;content</span><span>unused</span></div>
+                <div class="code-line unused"><span>&nbsp;&nbsp;validationRules</span><span>unused</span></div>
+                <div class="code-line unused"><span>&nbsp;&nbsp;allowedDomains</span><span>unused</span></div>
+                <div class="code-line unused"><span>&nbsp;&nbsp;spamFilterEnabled</span><span>unused</span></div>
+              </div>
+              <div class="field-detail">
+                <h3>validationRules</h3>
+                <p style="margin-top:10px;color:var(--muted);font-weight:650;line-height:1.35">Returned by the API, never read by the UI during this session.</p>
+                <div class="danger-box">
+                  <strong>1.8 KB</strong>
+                  <span>estimated removable payload</span>
+                </div>
+                <div class="danger-box" style="background:#f0fff7;border-color:#b9f4d4">
+                  <strong style="color:var(--green)">Action</strong>
+                  <span>Move behind details endpoint or omit from list view.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel pad">
+            <div class="panel-title">Developer friendly</div>
+            <h2>Turn vague “API feels heavy” into a field-level fix list.</h2>
+            <p>Overfetch groups unused fields by endpoint, page, and session so frontend and backend teams can agree on the next change.</p>
+            <div class="tiles" style="grid-template-columns:1fr 1fr;margin-top:34px">
+              <div class="tile"><small>Unused fields</small><strong class="number-pop">108</strong></div>
+              <div class="tile"><small>Rendered fields</small><strong style="color:var(--green)">6</strong></div>
+              <div class="tile"><small>Top subtree</small><strong>forms</strong></div>
+              <div class="tile"><small>Report time</small><strong>Live</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="screenshot-4" class="artboard screenshot">
+        <div class="ambient"></div>
+        <div class="mesh"></div>
+        <header class="topbar">
+          <div class="brand">
+            <img class="logo-mark" src="../assets/logo.png" alt="" />
+            <span><span class="name">Overfetch</span><span class="tag">Duplicate request detection</span></span>
+          </div>
+          <div class="nav">
+            <span class="tab">Requests</span>
+            <span class="tab active">Duplicates</span>
+          </div>
+        </header>
+        <div class="dupe-layout">
+          <div class="panel pad">
+            <div class="panel-title">Duplicate calls</div>
+            <h2>Spot repeated API work while you browse.</h2>
+            <p>Find endpoints that fire more than once, then estimate the payload and latency you can save.</p>
+            <div class="metric-row" style="margin-top:32px">
+              <div class="mini-metric"><strong>4x</strong><span>/api/forms</span></div>
+              <div class="mini-metric"><strong class="number-pop">28 KB</strong><span>repeated</span></div>
+            </div>
+          </div>
+          <div class="panel timeline">
+            <div class="event">
+              <div class="event-dot">1</div>
+              <div class="event-body"><strong>GET /api/forms</strong><span>Initial dashboard render · 320 ms</span></div>
+              <div class="event-save">baseline</div>
+            </div>
+            <div class="event">
+              <div class="event-dot">2</div>
+              <div class="event-body"><strong>GET /api/forms</strong><span>Filter panel opened · same shape</span></div>
+              <div class="event-save">+9.6 KB</div>
+            </div>
+            <div class="event">
+              <div class="event-dot">3</div>
+              <div class="event-body"><strong>GET /api/forms</strong><span>Route tab focused · same shape</span></div>
+              <div class="event-save">+9.6 KB</div>
+            </div>
+            <div class="event">
+              <div class="event-dot">4</div>
+              <div class="event-body"><strong>GET /api/forms</strong><span>Manual refresh · same shape</span></div>
+              <div class="event-save">+9.6 KB</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="screenshot-5" class="artboard screenshot">
+        <div class="ambient"></div>
+        <div class="mesh"></div>
+        <header class="topbar">
+          <div class="brand">
+            <img class="logo-mark" src="../assets/logo.png" alt="" />
+            <span><span class="name">Overfetch</span><span class="tag">Popup summary + full report</span></span>
+          </div>
+        </header>
+        <div class="popup-stage">
+          <div class="promo-copy">
+            <div class="eyebrow">From popup to deep dive</div>
+            <h1>A quick answer first. A full report when you need it.</h1>
+            <p>Open the extension on any page to see whether the current domain is overfetching, then jump into the dashboard for field-level detail.</p>
+            <div class="metric-row">
+              <div class="mini-metric"><strong>Live</strong><span>while browsing</span></div>
+              <div class="mini-metric"><strong>1 click</strong><span>to dashboard</span></div>
+            </div>
+          </div>
+          <div class="popup-window">
+            <div class="popup-head">
+              <img src="../assets/logo.png" alt="" />
+              <div><strong>Overfetch</strong><span>API payload analyzer</span></div>
+            </div>
+            <div class="popup-content">
+              <div class="domain-card"><span>Analyzing</span><strong>FormDB</strong><p style="margin-top:8px;color:var(--muted);font-weight:700">formdb.io · since 5:30 PM</p></div>
+              <div class="popup-alert"><strong>You're overfetching</strong><h2>Your UI uses less than this domain's APIs return</h2></div>
+              <div class="popup-stats">
+                <div class="popup-stat-row">
+                  <div><strong>11.6 KB</strong><p style="color:var(--muted);font-weight:700">Data received</p></div>
+                  <div style="text-align:right"><strong>4.6 KB</strong><p style="color:var(--muted);font-weight:700">Used by UI</p></div>
+                </div>
+                <div class="progress" style="margin-top:22px"><div style="width:60%"></div></div>
+              </div>
+              <div class="cta" style="width:100%;margin-top:24px;background:var(--purple)">Get the full report</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="promo-small" class="artboard small-promo">
+        <div class="ambient"></div>
+        <div class="mesh"></div>
+        <div class="small-inner">
+          <img class="logo-mark" src="../assets/logo.png" alt="" />
+          <h1>Catch API payload waste.</h1>
+          <p>See unused JSON fields, duplicate calls, and endpoint efficiency in DevTools.</p>
+        </div>
+        <div class="small-device">
+          <div class="ring"><div><strong>97%</strong><span>Waste</span></div></div>
+          <div class="progress"><div style="width:82%"></div></div>
+          <div style="margin-top:14px;color:#121827;font-size:16px;font-weight:900">Overfetch</div>
+        </div>
+      </section>
+
+      <section id="promo-marquee" class="artboard marquee">
+        <div class="ambient"></div>
+        <div class="mesh"></div>
+        <div class="marquee-copy">
+          <div class="brand">
+            <img class="logo-mark" src="../assets/logo.png" alt="" />
+            <span><span class="name">Overfetch</span><span class="tag">Chrome DevTools extension</span></span>
+          </div>
+          <h1>Find the API data your UI never uses.</h1>
+          <p>Live payload analytics for frontend developers: unused fields, duplicate requests, and endpoint waste ranked while you browse.</p>
+        </div>
+        <div class="browser-window marquee-product">
+          <div class="chrome">
+            <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+            <span class="url">DevTools · Overfetch</span>
+          </div>
+          <section class="screen">
+            <div class="alert-card">
+              <div>
+                <h2>You're overfetching</h2>
+                <p>9.1 KB wasted across 12 API calls.</p>
+              </div>
+              <div class="ring"><div><strong>97%</strong><span>Waste</span></div></div>
+            </div>
+            <div class="tiles">
+              <div class="tile"><small>Payload</small><strong>9.3 KB</strong></div>
+              <div class="tile"><small>Used</small><strong style="color:var(--green)">253 B</strong></div>
+              <div class="tile"><small>Unused</small><strong class="number-pop">9.1 KB</strong></div>
+              <div class="tile"><small>Score</small><strong>3/100</strong></div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script>
+      const requestedAsset = new URLSearchParams(window.location.search).get("asset");
+      if (requestedAsset) {
+        document.body.style.background = "#fbfcff";
+        document.querySelector(".stack").style.padding = "0";
+        document.querySelector(".stack").style.gap = "0";
+        for (const board of document.querySelectorAll(".artboard")) {
+          board.style.display = board.id === requestedAsset ? "block" : "none";
+        }
+      }
+    </script>
+  </body>
+</html>
