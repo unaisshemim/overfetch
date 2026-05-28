@@ -8,7 +8,7 @@ Chrome DevTools extension that analyzes runtime API payload usage in frontend ap
 
 ## App Preview
 
-![Overfetch App Preview](./assets/overfetch-app-preview.svg)
+![Overfetch App Preview](./assets/heroimg.png)
 
 ## Stack
 
