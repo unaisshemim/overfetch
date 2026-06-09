@@ -1,4 +1,4 @@
-import { Settings } from 'lucide-react';
+import { ExternalLink, Settings } from 'lucide-react';
 import { useDashboardStore } from '@/entrypoints/dashboard/store';
 
 export function FooterBar() {
@@ -8,9 +8,20 @@ export function FooterBar() {
   return (
     <footer className="mt-auto border-t border-of-border bg-white">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-of-muted">
-          Tip: Click on any metric to see detailed breakdown and optimization suggestions.
-        </p>
+        <div className="flex flex-col gap-1">
+          <a
+            href="https://overfetch.site"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex w-fit items-center gap-1.5 text-xs font-semibold text-of-purple transition hover:text-of-purple-dark"
+          >
+            overfetch.site
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+          <p className="text-xs text-of-muted">
+            Tip: Click on any metric to see detailed breakdown and optimization suggestions.
+          </p>
+        </div>
         <div className="flex items-center gap-4">
           <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-gray-700">
             <span>Auto-capture</span>

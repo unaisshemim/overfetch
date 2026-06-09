@@ -11,13 +11,7 @@ export default defineConfig({
     name: 'Overfetch',
     description:
       'Analyzes runtime API payload usage — tracks which response fields the UI actually uses.',
-    permissions: ['tabs'],
-    host_permissions: [
-      'http://localhost/*',
-      'http://127.0.0.1/*',
-      'http://*/*',
-      'https://*/*',
-    ],
+    permissions: ['activeTab', 'scripting'],
     icons: {
       16: '/icon/16.png',
       32: '/icon/32.png',
@@ -28,12 +22,6 @@ export default defineConfig({
       default_title: 'Overfetch',
       default_popup: '/popup.html',
     },
-    web_accessible_resources: [
-      {
-        resources: ['inject.js'],
-        matches: ['<all_urls>'],
-      },
-    ],
   },
   vite: () => ({
     plugins: [tailwindcss()],

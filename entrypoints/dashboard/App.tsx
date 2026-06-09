@@ -184,10 +184,7 @@ export default function DashboardApp() {
 
   return (
     <div className="flex min-h-screen flex-col bg-of-surface text-gray-900">
-      <Navbar
-        onRefresh={() => void fetchAndApplySnapshot('refresh')}
-        onReset={() => void resetSessionData()}
-      />
+      <Navbar />
 
       <main className="flex-1 overflow-y-auto">
         {activeTab === 'overview' ? (

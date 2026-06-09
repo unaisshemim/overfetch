@@ -37,8 +37,15 @@ interface TabBuffer {
 const tabBuffers = new Map<number, TabBuffer>();
 const tabSessions = new Map<number, TrackingSession>();
 const panelPorts = new Set<Browser.runtime.Port>();
+const captureRegistrations = new Map<
+  number,
+  { domain: string; matchPattern: string; scriptIds: [string, string] }
+>();
 
 const DEBUG_PREFIX = '[Overfetch Debug]';
+const CAPTURE_SCRIPT_ID_PREFIX = 'overfetch-capture-tab-';
+const CAPTURE_BRIDGE_FILE = '/content-scripts/content.js';
+const CAPTURE_INSTRUMENTATION_FILE = '/content-scripts/instrumentation.js';
 
 function debugLog(message: string, details?: Record<string, unknown>): void {
   if (details) {
@@ -233,6 +240,121 @@ function clearTabRuntimeData(tabId: number): void {
   tabBuffers.delete(tabId);
 }
 
+function getCaptureMatchPattern(urlString: string): string | null {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return `${url.protocol}//${url.hostname}/*`;
+  } catch {
+    return null;
+  }
+}
+
+async function unregisterCaptureScripts(scriptIds: string[]): Promise<void> {
+  await browser.scripting.unregisterContentScripts({ ids: scriptIds }).catch(() => undefined);
+}
+
+async function enableCaptureForTab(
+  tabId: number,
+): Promise<{ ok: boolean; session: TrackingSession | null; error?: string }> {
+  const tab = await browser.tabs.get(tabId).catch(() => null);
+  const pageUrl = tab?.url ?? '';
+  const domain = getDomainFromUrl(pageUrl);
+  const matchPattern = getCaptureMatchPattern(pageUrl);
+
+  if (!tab || !domain || !matchPattern) {
+    return {
+      ok: false,
+      session: null,
+      error: 'Overfetch can only analyze regular HTTP and HTTPS pages.',
+    };
+  }
+
+  const bridgeScriptId = `${CAPTURE_SCRIPT_ID_PREFIX}${tabId}`;
+  const instrumentationScriptId = `${bridgeScriptId}-main`;
+  const scriptIds: [string, string] = [bridgeScriptId, instrumentationScriptId];
+  const previous = captureRegistrations.get(tabId);
+  if (previous && previous.matchPattern !== matchPattern) {
+    await unregisterCaptureScripts(previous.scriptIds);
+    clearTabRuntimeData(tabId);
+    tabSessions.delete(tabId);
+  }
+
+  const registered = await browser.scripting.getRegisteredContentScripts();
+  const contentScripts: Browser.scripting.RegisteredContentScript[] = [
+    {
+      id: bridgeScriptId,
+      matches: [matchPattern],
+      js: [CAPTURE_BRIDGE_FILE],
+      runAt: 'document_start',
+      persistAcrossSessions: false,
+      world: 'ISOLATED',
+    },
+    {
+      id: instrumentationScriptId,
+      matches: [matchPattern],
+      js: [CAPTURE_INSTRUMENTATION_FILE],
+      runAt: 'document_start',
+      persistAcrossSessions: false,
+      world: 'MAIN',
+    },
+  ];
+
+  for (const contentScript of contentScripts) {
+    if (registered.some((script) => script.id === contentScript.id)) {
+      await browser.scripting.updateContentScripts([contentScript]);
+    } else {
+      await browser.scripting.registerContentScripts([contentScript]);
+    }
+  }
+
+  captureRegistrations.set(tabId, { domain, matchPattern, scriptIds });
+  const session = ensureSession(tabId, tab);
+
+  // Start capturing the current document immediately. The runtime registration
+  // handles future reloads at document_start.
+  await browser.scripting
+    .executeScript({
+      target: { tabId },
+      files: [CAPTURE_BRIDGE_FILE],
+    })
+    .catch(() => undefined);
+  await browser.scripting
+    .executeScript({
+      target: { tabId },
+      files: [CAPTURE_INSTRUMENTATION_FILE],
+      world: 'MAIN',
+    })
+    .catch(() => undefined);
+
+  return { ok: true, session };
+}
+
+async function restoreCaptureRegistrations(): Promise<void> {
+  const registered = await browser.scripting.getRegisteredContentScripts().catch(() => []);
+  for (const script of registered) {
+    if (!script.id.startsWith(CAPTURE_SCRIPT_ID_PREFIX)) continue;
+    if (script.id.endsWith('-main')) continue;
+    const tabId = Number(script.id.slice(CAPTURE_SCRIPT_ID_PREFIX.length));
+    const matchPattern = script.matches?.[0];
+    if (!Number.isFinite(tabId) || !matchPattern) continue;
+
+    const tab = await browser.tabs.get(tabId).catch(() => null);
+    const domain = tab?.url ? getDomainFromUrl(tab.url) : null;
+    if (!tab || !domain) {
+      await unregisterCaptureScripts([script.id, `${script.id}-main`]);
+      continue;
+    }
+
+    captureRegistrations.set(tabId, {
+      domain,
+      matchPattern,
+      scriptIds: [script.id, `${script.id}-main`],
+    });
+    ensureSession(tabId, tab);
+  }
+}
+
 function ensureSession(tabId: number, tab?: Browser.tabs.Tab): TrackingSession | null {
   const existing = tabSessions.get(tabId);
   const domain = tab?.url ? getDomainFromUrl(tab.url) : null;
@@ -263,12 +385,6 @@ function ensureSession(tabId: number, tab?: Browser.tabs.Tab): TrackingSession |
 
   tabSessions.set(tabId, session);
   return session;
-}
-
-async function ensureSessionAsync(tabId: number): Promise<TrackingSession | null> {
-  const tab = await browser.tabs.get(tabId).catch(() => null);
-  if (tab) return ensureSession(tabId, tab);
-  return tabSessions.get(tabId) ?? null;
 }
 
 async function resetSession(tabId: number): Promise<TrackingSession | null> {
@@ -370,12 +486,23 @@ function handlePageMessage(
 }
 
 export default defineBackground(() => {
+  void restoreCaptureRegistrations();
+
   browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    const capture = captureRegistrations.get(tabId);
+    if (!capture) return;
+
+    const domain = tab.url ? getDomainFromUrl(tab.url) : null;
+    if (domain && domain !== capture.domain) {
+      captureRegistrations.delete(tabId);
+      void unregisterCaptureScripts(capture.scriptIds);
+      return;
+    }
+
     const session = ensureSession(tabId, tab);
     if (!session) return;
     if (changeInfo.status !== 'complete' && !changeInfo.url && !changeInfo.title) return;
 
-    const domain = tab.url ? getDomainFromUrl(tab.url) : null;
     if (!domain || !requestMatchesSessionDomain(`https://${domain}/`, session.domain)) {
       return;
     }
@@ -387,6 +514,14 @@ export default defineBackground(() => {
       pageTitle: meta.pageTitle,
       pageUrl: meta.pageUrl,
     });
+  });
+
+  browser.tabs.onRemoved.addListener((tabId) => {
+    const capture = captureRegistrations.get(tabId);
+    if (capture) void unregisterCaptureScripts(capture.scriptIds);
+    captureRegistrations.delete(tabId);
+    tabSessions.delete(tabId);
+    clearTabRuntimeData(tabId);
   });
 
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -437,12 +572,23 @@ export default defineBackground(() => {
     ) {
       const requestedTabId = message.tabId;
 
-      if (message.type === 'get-reading-session' || message.type === 'dashboard-get-session-snapshot') {
-        void ensureSessionAsync(requestedTabId).then(() => {
-          debugLog('Popup/dashboard requested reading session', { tabId: requestedTabId });
-          sendResponse(getSessionSnapshot(requestedTabId));
-        });
+      if (message.type === 'enable-capture') {
+        void enableCaptureForTab(requestedTabId)
+          .then(sendResponse)
+          .catch((error: unknown) => {
+            sendResponse({
+              ok: false,
+              session: null,
+              error: error instanceof Error ? error.message : 'Unable to enable capture.',
+            });
+          });
         return true;
+      }
+
+      if (message.type === 'get-reading-session' || message.type === 'dashboard-get-session-snapshot') {
+        debugLog('Popup/dashboard requested reading session', { tabId: requestedTabId });
+        sendResponse(getSessionSnapshot(requestedTabId));
+        return false;
       }
 
       if (message.type === 'reset-session' || message.type === 'dashboard-reset-session') {
@@ -453,23 +599,21 @@ export default defineBackground(() => {
       }
 
       if (message.type === 'popup-get-summary') {
-        void ensureSessionAsync(requestedTabId).then(() => {
-          const snapshot = getSessionSnapshot(requestedTabId);
-          debugLog('Popup requested summary', {
-            tabId: requestedTabId,
-            hasSession: Boolean(snapshot.session),
-            hasSummary: Boolean(snapshot.summary),
-            rawEntries: getOrCreateBuffer(requestedTabId).raw.size,
-          });
-          if (snapshot.summary && snapshot.analytics) {
-            sendResponse({ summary: snapshot.analytics, session: snapshot.session });
-            return;
-          }
-          const state = rebuildTabStateRaw(requestedTabId);
-          const summary = buildSummary(state.requests);
-          sendResponse({ summary, session: snapshot.session });
+        const snapshot = getSessionSnapshot(requestedTabId);
+        debugLog('Popup requested summary', {
+          tabId: requestedTabId,
+          hasSession: Boolean(snapshot.session),
+          hasSummary: Boolean(snapshot.summary),
+          rawEntries: getOrCreateBuffer(requestedTabId).raw.size,
         });
-        return true;
+        if (snapshot.summary && snapshot.analytics) {
+          sendResponse({ summary: snapshot.analytics, session: snapshot.session });
+          return false;
+        }
+        const state = rebuildTabStateRaw(requestedTabId);
+        const summary = buildSummary(state.requests);
+        sendResponse({ summary, session: snapshot.session });
+        return false;
       }
 
       if (
@@ -477,35 +621,34 @@ export default defineBackground(() => {
         message.type === 'dashboard-refresh-snapshot' ||
         message.type === 'dashboard-rebuild-snapshot'
       ) {
-        void ensureSessionAsync(requestedTabId).then(() => {
-          const sessionSnapshot = getSessionSnapshot(requestedTabId);
-          if (sessionSnapshot.session && sessionSnapshot.summary) {
-            const filteredEntries = filterEntriesForSession(
-              [...getOrCreateBuffer(requestedTabId).raw.values()],
-              sessionSnapshot.session,
-            );
-            const deduped = filteredEntries.map((e) =>
-              analyzeRequest(e.payload, [...e.usedPaths], 0),
-            );
-            sendResponse({
-              session: sessionSnapshot,
-              state: {
-                tabId: requestedTabId,
-                requests: deduped,
-                updatedAt: Date.now(),
-              },
-              summary: sessionSnapshot.analytics,
-            });
-            return;
-          }
-          const { state, summary } = rebuildTabStateDedupe(requestedTabId);
-          sendResponse({ state, summary, session: sessionSnapshot });
-        });
-        return true;
+        const sessionSnapshot = getSessionSnapshot(requestedTabId);
+        if (sessionSnapshot.session && sessionSnapshot.summary) {
+          const filteredEntries = filterEntriesForSession(
+            [...getOrCreateBuffer(requestedTabId).raw.values()],
+            sessionSnapshot.session,
+          );
+          const deduped = filteredEntries.map((e) =>
+            analyzeRequest(e.payload, [...e.usedPaths], 0),
+          );
+          sendResponse({
+            session: sessionSnapshot,
+            state: {
+              tabId: requestedTabId,
+              requests: deduped,
+              updatedAt: Date.now(),
+            },
+            summary: sessionSnapshot.analytics,
+          });
+          return false;
+        }
+        const { state, summary } = rebuildTabStateDedupe(requestedTabId);
+        sendResponse({ state, summary, session: sessionSnapshot });
+        return false;
       }
     }
 
     if (!tabId) return false;
+    if (!captureRegistrations.has(tabId)) return false;
 
     const msg = message as PageMessage & { source?: string };
     if (msg?.source !== PAGE_MESSAGE_SOURCE) return false;

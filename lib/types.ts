@@ -71,7 +71,8 @@ export type BackgroundMessageType =
   | 'get-reading-session'
   | 'dashboard-get-session-snapshot'
   | 'dashboard-reset-session'
-  | 'reset-session';
+  | 'reset-session'
+  | 'enable-capture';
 
 export interface AnalyzedRequest {
   id: string;
@@ -205,6 +206,11 @@ export interface ResetSessionMessage {
   tabId: number;
 }
 
+export interface EnableCaptureMessage {
+  type: 'enable-capture';
+  tabId: number;
+}
+
 export type BackgroundOutboundMessage =
   | BackgroundSnapshotMessage
   | BackgroundStateUpdateMessage;
@@ -221,4 +227,5 @@ export type BackgroundInboundMessage =
   | DashboardGetSessionSnapshotMessage
   | DashboardResetSessionMessage
   | ResetSessionMessage
+  | EnableCaptureMessage
   | PageMessage;

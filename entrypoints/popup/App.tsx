@@ -65,6 +65,17 @@ async function fetchSessionSnapshot(
   return (response as SessionDashboardSnapshot | undefined) ?? null;
 }
 
+async function enableCapture(tabId: number): Promise<{ ok: boolean; error?: string }> {
+  const response = await browser.runtime.sendMessage({
+    type: "enable-capture",
+    tabId,
+  });
+  return {
+    ok: response?.ok === true,
+    error: typeof response?.error === "string" ? response.error : undefined,
+  };
+}
+
 async function fetchSummary(tabId: number): Promise<AnalyticsSummary | null> {
   console.info(`${DEBUG_PREFIX} Popup requesting summary`, { tabId });
   const response = await browser.runtime.sendMessage({
@@ -138,6 +149,7 @@ export default function PopupApp() {
   const [activeTabId, setActiveTabId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
   const autoRefreshStarted = useRef(false);
 
   async function syncSession(tabId: number) {
@@ -151,6 +163,12 @@ export default function PopupApp() {
     setLoading(true);
     setSummary(null);
     try {
+      const enabled = await enableCapture(tabId);
+      if (!enabled.ok) {
+        setCaptureError(enabled.error ?? "Unable to analyze this page.");
+        return;
+      }
+      setCaptureError(null);
       await browser.tabs.reload(tabId);
       const next = await waitForSummary(tabId);
       setSummary(next);
@@ -181,6 +199,13 @@ export default function PopupApp() {
       }
 
       setActiveTabId(tabId);
+      const enabled = await enableCapture(tabId);
+      if (!enabled.ok) {
+        setCaptureError(enabled.error ?? "Unable to analyze this page.");
+        setLoading(false);
+        return;
+      }
+      setCaptureError(null);
       await syncSession(tabId);
       setLoading(false);
 
@@ -332,7 +357,7 @@ export default function PopupApp() {
                   ? `${formatBytes(summary.wastedBytes)} wasted across ${summary.totalRequests} API calls.`
                   : session
                     ? "Waiting for API calls on this domain…"
-                    : "Open a normal website tab to start capturing API calls."}
+                    : captureError ?? "Open a regular website tab to start capturing API calls."}
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-1">
@@ -456,7 +481,7 @@ export default function PopupApp() {
                       className="h-4 w-4 object-contain"
                     />
                   </span>
-                  <span className="truncate">Get the full report on overfetch.io</span>
+                  <span className="truncate">Get the full report on overfetch.site</span>
                   <ExternalLink className="h-3.5 w-3.5" />
                 </button>
               </div>

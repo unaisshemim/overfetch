@@ -31,10 +31,13 @@ const MAX_TEXT_TRACKED_BODIES = 400;
 const MAX_SHAPE_DEPTH = 8;
 const MAX_OBJECT_KEYS_PER_SHAPE = 250;
 const MAX_ARRAY_SHAPE_SAMPLES = 10;
-const MAX_DOM_MATCH_FIELDS = 1_200;
-const MAX_DOM_MATCH_TEXT_LENGTH = 500_000;
+const MAX_DOM_MATCH_FIELDS = 500;
+const MAX_DOM_MATCH_ACTIVE_REQUESTS = 25;
+const MAX_DOM_MATCH_TEXT_LENGTH = 120_000;
 const DOM_MATCH_SCAN_DELAYS_MS = [150, 600, 1_500, 3_000];
-const DOM_MATCH_KEEPALIVE_MS = 60_000;
+const DOM_MATCH_KEEPALIVE_MS = 20_000;
+const DOM_MATCH_MUTATION_DEBOUNCE_MS = 1_500;
+const DOM_MATCH_MIN_SCAN_INTERVAL_MS = 2_000;
 const DEBUG_PREFIX = '[Overfetch Debug]';
 
 type DomMatchCandidate = {
@@ -46,8 +49,10 @@ type DomMatchCandidate = {
 const domMatchCandidatesByRequest = new Map<string, DomMatchCandidate[]>();
 let domMatchObserver: MutationObserver | null = null;
 let domMatchMutationTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
+let lastDomMatchScanAt = 0;
 
 function debugLog(message: string, details?: Record<string, unknown>): void {
+  if (localStorage.getItem('overfetch:debug') !== 'true') return;
   if (details) {
     console.info(`${DEBUG_PREFIX} ${message}`, details);
     return;
@@ -430,26 +435,31 @@ function collectDomMatchCandidates(
 
 function getVisibleUiText(): { text: string; digits: string } {
   const parts: string[] = [];
-  if (document.body?.innerText) parts.push(document.body.innerText);
-  for (const element of document.querySelectorAll(
-    'svg text, svg tspan, svg title, [aria-label], [title], [data-value]',
-  )) {
-    const rects = element.getClientRects();
-    if (rects.length === 0 && !element.closest('svg')) continue;
-    parts.push(element.textContent ?? '');
-    parts.push(element.getAttribute('aria-label') ?? '');
-    parts.push(element.getAttribute('title') ?? '');
-    parts.push(element.getAttribute('data-value') ?? '');
+  const bodyText = document.body?.textContent ?? '';
+  if (bodyText) parts.push(bodyText.slice(0, MAX_DOM_MATCH_TEXT_LENGTH));
+
+  if (parts.join(' ').length < MAX_DOM_MATCH_TEXT_LENGTH) {
+    for (const element of document.querySelectorAll(
+      'svg text, svg tspan, svg title, [aria-label], [title], [data-value]',
+    )) {
+      parts.push(element.textContent ?? '');
+      parts.push(element.getAttribute('aria-label') ?? '');
+      parts.push(element.getAttribute('title') ?? '');
+      parts.push(element.getAttribute('data-value') ?? '');
+    }
   }
-  for (const element of document.querySelectorAll('input, textarea, select')) {
-    if (
-      element instanceof HTMLInputElement ||
-      element instanceof HTMLTextAreaElement ||
-      element instanceof HTMLSelectElement
-    ) {
-      parts.push(element.value);
-      if (element instanceof HTMLSelectElement) {
-        parts.push(element.selectedOptions[0]?.textContent ?? '');
+
+  if (parts.join(' ').length < MAX_DOM_MATCH_TEXT_LENGTH) {
+    for (const element of document.querySelectorAll('input, textarea, select')) {
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement ||
+        element instanceof HTMLSelectElement
+      ) {
+        parts.push(element.value);
+        if (element instanceof HTMLSelectElement) {
+          parts.push(element.selectedOptions[0]?.textContent ?? '');
+        }
       }
     }
   }
@@ -459,6 +469,11 @@ function getVisibleUiText(): { text: string; digits: string } {
 
 function runDomUsageScan(requestId?: string): void {
   if (domMatchCandidatesByRequest.size === 0 || !document.body) return;
+
+  const now = Date.now();
+  if (!requestId && now - lastDomMatchScanAt < DOM_MATCH_MIN_SCAN_INTERVAL_MS) return;
+  lastDomMatchScanAt = now;
+
   const ui = getVisibleUiText();
   const entries = requestId
     ? ([[requestId, domMatchCandidatesByRequest.get(requestId) ?? []]] as const)
@@ -480,20 +495,29 @@ function runDomUsageScan(requestId?: string): void {
   }
 }
 
+function pruneDomMatchCandidates(): void {
+  const overflow = domMatchCandidatesByRequest.size - MAX_DOM_MATCH_ACTIVE_REQUESTS;
+  if (overflow <= 0) return;
+  const staleRequestIds = [...domMatchCandidatesByRequest.keys()].slice(0, overflow);
+  for (const requestId of staleRequestIds) {
+    domMatchCandidatesByRequest.delete(requestId);
+    fieldAccessPostCounts.delete(requestId);
+    fieldAccessPostedPaths.delete(requestId);
+  }
+}
+
 function ensureDomMatchObserver(): void {
   if (domMatchObserver || !document.documentElement) return;
   domMatchObserver = new MutationObserver(() => {
     if (domMatchMutationTimer) globalThis.clearTimeout(domMatchMutationTimer);
     domMatchMutationTimer = globalThis.setTimeout(() => {
       runDomUsageScan();
-    }, 250);
+    }, DOM_MATCH_MUTATION_DEBOUNCE_MS);
   });
   domMatchObserver.observe(document.documentElement, {
     childList: true,
     subtree: true,
     characterData: true,
-    attributes: true,
-    attributeFilter: ['value', 'aria-label', 'title'],
   });
 }
 
@@ -501,6 +525,7 @@ function scheduleDomUsageScans(requestId: string, body: unknown): void {
   const candidates = collectDomMatchCandidates(body);
   if (candidates.length === 0) return;
   domMatchCandidatesByRequest.set(requestId, candidates);
+  pruneDomMatchCandidates();
   ensureDomMatchObserver();
   for (const delay of DOM_MATCH_SCAN_DELAYS_MS) {
     globalThis.setTimeout(() => runDomUsageScan(requestId), delay);
